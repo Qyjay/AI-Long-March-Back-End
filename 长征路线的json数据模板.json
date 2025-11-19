@@ -1,0 +1,44 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "路线唯一标识符",
+        "name": "路线名称（英文）",
+        "description": "路线描述（中文）",
+        "distance_km": "路线总距离（公里）",
+        "duration_days": "行军总天数"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          ["经度", "纬度"],
+          ["经度", "纬度"]
+        ]
+      }
+    }
+  ],
+  "_template_notes": {
+    "description": "长征路线数据模板",
+    "format": "GeoJSON FeatureCollection格式",
+    "coordinate_system": "WGS84坐标系统",
+    "fields": {
+      "type": "固定值：FeatureCollection",
+      "features": "路线要素数组",
+      "features[].type": "固定值：Feature",
+      "features[].properties.id": "路线唯一标识符，字符串类型",
+      "features[].properties.name": "路线名称，字符串类型",
+      "features[].properties.description": "路线描述，字符串类型",
+      "features[].properties.distance_km": "路线总距离，数字类型（公里）",
+      "features[].properties.duration_days": "行军总天数，数字类型",
+      "features[].geometry.type": "固定值：LineString",
+      "features[].geometry.coordinates": "坐标点数组，每个点为[经度, 纬度]格式"
+    },
+    "usage": {
+      "main_route": "主路线ID建议使用'main_route'",
+      "alternative_routes": "备选路线可使用'alternative_route_1'等命名",
+      "coordinates_format": "坐标格式为[longitude, latitude]，使用十进制度数"
+    }
+  }
+}

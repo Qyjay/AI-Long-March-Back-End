@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI RAG流式聊天演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .chat-container {
+            padding: 30px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .input-group input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+        
+        .input-group button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .input-group button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .input-group button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .response-area {
+            background: #f8fafc;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 25px;
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .response-content {
+            font-size: 16px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 100px;
+        }
+        
+        .typing-indicator {
+            display: none;
+            color: #6b7280;
+            font-style: italic;
+            margin-top: 10px;
+        }
+        
+        .usage-info {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .usage-info h4 {
+            color: #065f46;
+            margin-bottom: 10px;
+        }
+        
+        .usage-stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .streaming-cursor {
+            display: inline-block;
+            width: 2px;
+            background: #4f46e5;
+            margin-left: 2px;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .debug-info {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
+        
+        .user-message {
+            background: #e0f2fe;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #0369a1;
+        }
+        
+        .context-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .context-doc {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #856404;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 4px;
+        }
+        
+        .context-score {
+            font-size: 12px;
+            color: #666;
+            margin-left: 8px;
+        }
+        
+        .ai-response {
+            margin-top: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #10b981;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI RAG流式聊天演示</h1>
+            <p>基于向量检索的智能问答系统</p>
+        </div>
+        
+        <div class="chat-container">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    placeholder="请输入您的问题..." 
+                    value="你的检索库里有什么内容"
+                >
+                <button id="sendButton">发送消息</button>
+            </div>
+            
+            <div class="response-area">
+                <div id="conversation">
+                    <div class="user-message" style="display: none;" id="userMessageDisplay"></div>
+                    <div class="response-content" id="responseContent">
+                        等待AI回复...
+                    </div>
+                </div>
+                <div class="typing-indicator" id="typingIndicator">
+                    AI正在思考中<span class="streaming-cursor"></span>
+                </div>
+            </div>
+            
+            <div class="usage-info" id="usageInfo">
+                <h4>📊 请求用量统计</h4>
+                <div class="usage-stats" id="usageStats"></div>
+            </div>
+            
+            <div class="error-message" id="errorMessage"></div>
+            
+            <div class="debug-info" id="debugInfo"></div>
+        </div>
+    </div>
+
+    <script>
+        class ChatStream {
+            constructor() {
+                this.messageInput = document.getElementById('messageInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.responseContent = document.getElementById('responseContent');
+                this.typingIndicator = document.getElementById('typingIndicator');
+                this.usageInfo = document.getElementById('usageInfo');
+                this.usageStats = document.getElementById('usageStats');
+                this.errorMessage = document.getElementById('errorMessage');
+                this.debugInfo = document.getElementById('debugInfo');
+                this.userMessageDisplay = document.getElementById('userMessageDisplay');
+                this.conversation = document.getElementById('conversation');
+                
+                this.isStreaming = false;
+                this.currentContent = '';
+                this.controller = null;
+                this.currentUserMessage = '';
+                this.hasContext = false;
+                
+                this.initEventListeners();
+            }
+            
+            initEventListeners() {
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.sendMessage();
+                    }
+                });
+            }
+            
+            async sendMessage() {
+                if (this.isStreaming) {
+                    this.cancelRequest();
+                    return;
+                }
+                
+                const userMessage = this.messageInput.value.trim();
+                if (!userMessage) return;
+                
+                this.currentUserMessage = userMessage;
+                this.startStreaming();
+                
+                try {
+                    this.controller = new AbortController();
+                    const signal = this.controller.signal;
+                    
+                    // 显示用户消息
+                    this.userMessageDisplay.textContent = `用户: ${userMessage}`;
+                    this.userMessageDisplay.style.display = 'block';
+                    
+                    // 发送请求到后端
+                    const requestBody = {
+                        message: userMessage
+                    };
+                    
+                    this.updateDebugInfo(`发送请求: ${JSON.stringify(requestBody)}`);
+                    
+                    const response = await fetch('http://localhost:8000/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestBody),
+                        signal: signal
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                    }
+                    
+                    await this.processStream(response);
+                    
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        this.showError(`请求失败: ${error.message}`);
+                        console.error('请求错误:', error);
+                    }
+                    this.stopStreaming();
+                }
+            }
+            
+            async processStream(response) {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        
+                        if (done) break;
+                        
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n\n');
+                        
+                        // 保留最后一个可能不完整的消息
+                        buffer = lines.pop() || '';
+                        
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                const dataStr = line.slice(6);
+                                if (dataStr.trim() === '') continue;
+                                
+                                try {
+                                    const data = JSON.parse(dataStr);
+                                    this.updateDebugInfo(`收到数据: ${data.type}`);
+                                    this.handleStreamData(data);
+                                } catch (e) {
+                                    console.error('解析JSON失败:', e, '数据:', dataStr);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 处理缓冲区中剩余的数据
+                    if (buffer.trim()) {
+                        const lines = buffer.split('\n\n');
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                const dataStr = line.slice(6);
+                                if (dataStr.trim() === '') continue;
+                                
+                                try {
+                                    const data = JSON.parse(dataStr);
+                                    this.handleStreamData(data);
+                                } catch (e) {
+                                    console.error('解析JSON失败:', e);
+                                }
+                            }
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('处理流时出错:', error);
+                } finally {
+                    reader.releaseLock();
+                    // 确保流结束时停止指示器
+                    if (this.isStreaming) {
+                        this.stopStreaming();
+                    }
+                }
+            }
+            
+            handleStreamData(data) {
+                switch (data.type) {
+                    case 'start':
+                        this.responseContent.innerHTML = '';
+                        this.currentContent = '';
+                        this.hasContext = false;
+                        
+                        // 显示检索上下文
+                        if (data.context_docs && data.context_docs.length > 0) {
+                            let contextHtml = '<div class="context-info">';
+                            contextHtml += '<strong>🔍 检索到的相关信息：</strong><br>';
+                            data.context_docs.forEach((doc, index) => {
+                                contextHtml += `<div class="context-doc">`;
+                                contextHtml += `<strong>文档 ${index + 1}:</strong> ${doc.content.substring(0, 150)}${doc.content.length > 150 ? '...' : ''}`;
+                                if (doc.score) {
+                                    contextHtml += `<span class="context-score">(相似度: ${(doc.score * 100).toFixed(1)}%)</span>`;
+                                }
+                                contextHtml += `</div>`;
+                            });
+                            contextHtml += '</div>';
+                            this.responseContent.innerHTML = contextHtml;
+                            this.hasContext = true;
+                        }
+                        break;
+                        
+                    case 'content':
+                        // 实时显示每个字符
+                        if (data.content) {
+                            this.currentContent += data.content;
+                            
+                            if (this.hasContext) {
+                                // 如果已经有上下文信息，在上下文字段后添加AI回复
+                                if (!this.responseContent.innerHTML.includes('ai-response')) {
+                                    this.responseContent.innerHTML += '<div class="ai-response">' + this.currentContent + '</div>';
+                                } else {
+                                    this.responseContent.innerHTML = this.responseContent.innerHTML.replace(
+                                        /<div class="ai-response">[\s\S]*?<\/div>/,
+                                        '<div class="ai-response">' + this.currentContent + '</div>'
+                                    );
+                                }
+                            } else {
+                                this.responseContent.textContent = this.currentContent;
+                            }
+                            this.scrollToBottom();
+                        }
+                        break;
+                        
+                    case 'complete':
+                        // 最终内容显示
+                        const finalContent = data.full_content || this.currentContent;
+                        if (this.hasContext) {
+                            this.responseContent.innerHTML = this.responseContent.innerHTML.replace(
+                                /<div class="ai-response">[\s\S]*?<\/div>/,
+                                '<div class="ai-response">' + finalContent + '</div>'
+                            );
+                        } else {
+                            this.responseContent.textContent = finalContent;
+                        }
+                        this.showUsageInfo(data.usage);
+                        this.scrollToBottom();
+                        this.stopStreaming();
+                        break;
+                        
+                    case 'error':
+                        this.showError(data.message);
+                        this.stopStreaming();
+                        break;
+                }
+            }
+            
+            cancelRequest() {
+                if (this.controller) {
+                    this.controller.abort();
+                    this.controller = null;
+                }
+                this.stopStreaming();
+            }
+            
+            showUsageInfo(usage) {
+                if (!usage) return;
+                
+                this.usageStats.innerHTML = `
+                    <div class="stat-item">
+                        <strong>输入 Tokens:</strong> ${usage.prompt_tokens}
+                    </div>
+                    <div class="stat-item">
+                        <strong>输出 Tokens:</strong> ${usage.completion_tokens}
+                    </div>
+                    <div class="stat-item">
+                        <strong>总计 Tokens:</strong> ${usage.total_tokens}
+                    </div>
+                `;
+                this.usageInfo.style.display = 'block';
+            }
+            
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorMessage.style.display = 'block';
+            }
+            
+            hideError() {
+                this.errorMessage.style.display = 'none';
+            }
+            
+            updateDebugInfo(message) {
+                this.debugInfo.textContent = message;
+                this.debugInfo.style.display = 'block';
+            }
+            
+            startStreaming() {
+                this.isStreaming = true;
+                this.sendButton.disabled = false;
+                this.sendButton.textContent = '停止生成';
+                this.typingIndicator.style.display = 'block';
+                this.responseContent.textContent = '';
+                this.usageInfo.style.display = 'none';
+                this.hideError();
+                this.currentContent = '';
+                this.debugInfo.style.display = 'block';
+                this.hasContext = false;
+                
+                // 禁用输入框
+                this.messageInput.disabled = true;
+            }
+            
+            stopStreaming() {
+                this.isStreaming = false;
+                this.sendButton.disabled = false;
+                this.sendButton.textContent = '发送消息';
+                this.typingIndicator.style.display = 'none';
+                this.controller = null;
+                
+                // 重新启用输入框并清空
+                this.messageInput.disabled = false;
+                this.messageInput.value = '';
+                this.messageInput.focus();
+            }
+            
+            scrollToBottom() {
+                this.responseContent.parentElement.scrollTop = this.responseContent.parentElement.scrollHeight;
+            }
+        }
+        
+        // 初始化聊天应用
+        document.addEventListener('DOMContentLoaded', () => {
+            new ChatStream();
+        });
+    </script>
+</body>
+</html>

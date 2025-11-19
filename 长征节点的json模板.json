@@ -1,0 +1,92 @@
+[
+  {
+    "id": "节点唯一标识符",
+    "name_zh": "节点中文名称",
+    "name_en": "节点英文名称",
+    "lng": "经度（数字）",
+    "lat": "纬度（数字）",
+    "time": "时间（中文格式）",
+    "time_en": "时间（英文格式）",
+    "summary_zh": "节点简介（中文）",
+    "summary_en": "节点简介（英文）",
+    "description_zh": "详细描述（中文）",
+    "description_en": "详细描述（英文）",
+    "poem_zh": "相关诗词（中文）",
+    "poem_en": "相关诗词（英文翻译）",
+    "image": "主要图片路径",
+    "gallery": [
+      "图片库路径1",
+      "图片库路径2",
+      "图片库路径3"
+    ],
+    "assets": {
+      "broll": "B-roll视频路径",
+      "sfx": "音效文件路径",
+      "video": "纪录片视频路径"
+    },
+    "historical_significance": "历史意义描述",
+    "casualties": "伤亡情况（可选）",
+    "weather": "天气情况（可选）",
+    "terrain": "地形描述（可选）",
+    "participants": "参与人员（可选）",
+    "enemy_forces": "敌军情况（可选）",
+    "battle_duration": "战斗持续时间（可选）",
+    "meeting_duration": "会议持续时间（可选）",
+    "key_decisions": "重要决策（可选）"
+  },
+  {
+    "_template_notes": {
+      "description": "长征节点数据模板",
+      "format": "JSON数组格式",
+      "coordinate_system": "WGS84坐标系统",
+      "required_fields": [
+        "id", "name_zh", "name_en", "lng", "lat", 
+        "time", "time_en", "summary_zh", "summary_en",
+        "description_zh", "description_en", "image"
+      ],
+      "optional_fields": [
+        "poem_zh", "poem_en", "gallery", "assets",
+        "historical_significance", "casualties", "weather",
+        "terrain", "participants", "enemy_forces",
+        "battle_duration", "meeting_duration", "key_decisions"
+      ],
+      "field_types": {
+        "id": "string - 节点唯一标识符，建议使用英文小写+下划线",
+        "name_zh": "string - 节点中文名称",
+        "name_en": "string - 节点英文名称",
+        "lng": "number - 经度，十进制度数",
+        "lat": "number - 纬度，十进制度数",
+        "time": "string - 时间中文格式，如'1934年10月'",
+        "time_en": "string - 时间英文格式，如'October 1934'",
+        "summary_zh": "string - 节点简介中文版",
+        "summary_en": "string - 节点简介英文版",
+        "description_zh": "string - 详细描述中文版",
+        "description_en": "string - 详细描述英文版",
+        "poem_zh": "string - 相关诗词中文",
+        "poem_en": "string - 相关诗词英文翻译",
+        "image": "string - 主要图片路径",
+        "gallery": "array - 图片库路径数组",
+        "assets": "object - 多媒体资源对象",
+        "assets.broll": "string - B-roll视频路径",
+        "assets.sfx": "string - 音效文件路径",
+        "assets.video": "string - 纪录片视频路径",
+        "historical_significance": "string - 历史意义描述",
+        "casualties": "string - 伤亡情况",
+        "weather": "string - 天气情况",
+        "terrain": "string - 地形描述",
+        "participants": "string - 参与人员",
+        "enemy_forces": "string - 敌军情况",
+        "battle_duration": "string - 战斗持续时间",
+        "meeting_duration": "string - 会议持续时间",
+        "key_decisions": "string - 重要决策"
+      },
+      "usage_notes": {
+        "coordinates": "经纬度使用WGS84坐标系统，精度建议保留3位小数",
+        "assets_paths": "资源路径建议使用相对路径，以/assets/开头",
+        "multilingual": "支持中英文双语，_zh后缀为中文，_en后缀为英文",
+        "optional_fields": "可选字段根据节点类型选择性添加，如战役节点添加casualties、battle_duration等",
+        "id_naming": "ID命名建议使用地名拼音或英文，如'ruijin'、'zunyi'等"
+      }
+    }
+  }
+]
